@@ -26,3 +26,4 @@ langchain-huggingface
 pypdf
 python-multipart
 alembic
+openpyxl

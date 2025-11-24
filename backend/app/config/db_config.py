@@ -8,7 +8,7 @@ from app.config.logging_config import get_logger
 from langchain_postgres import PGVector
 from langchain_postgres.vectorstores import PGVector
 from fastapi import HTTPException
-from langchain.schema import Document
+from langchain_core.documents import Document
 import pandas as pd
 from app.config.env import (DATABASE_URL)
 from typing import List, Optional

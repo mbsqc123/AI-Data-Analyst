@@ -2,8 +2,7 @@ from app.langgraph.workflows.sql_workflow import WorkflowManager
 from app.config.llm_config import LLM
 from app.config.db_config import DB, VectorDB
 from fastapi.responses import StreamingResponse, JSONResponse
-from langchain.chains import RetrievalQA
-from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from typing import List, Optional
 from app.config.logging_config import get_logger
 from app.api.db.chat_history import Messages, Conversations
@@ -18,7 +17,7 @@ llm_instance = LLM()
 vectorDB_instance = VectorDB()
 
 
-def execute_workflow(question: str, conversation_id: int, table_list: List[str],llm_model:Optional[str] = "gemma2-9b-it", system_db: Optional[DB] = None, db_url: Optional[str] = None):
+def execute_workflow(question: str, conversation_id: int, table_list: List[str], llm_model: Optional[str] = "gpt-4o-mini", system_db: Optional[DB] = None, db_url: Optional[str] = None):
 
     # Initialize db variable
     db: DB
@@ -36,7 +35,7 @@ def execute_workflow(question: str, conversation_id: int, table_list: List[str],
         raise ValueError("Either system_db or db_url must be provided")
 
 
-    llm = llm_instance.groq(llm_model)
+    llm = llm_instance.openai(llm_model)
     schema = db.get_schemas(table_names=table_list)
 
     workflow = WorkflowManager(llm, db)
@@ -92,62 +91,71 @@ def serialize_document(doc):
     }
 
 
+# DISABLED: This function uses deprecated RetrievalQA which is not available
+# PDF/Text document analysis is not integrated in frontend yet anyway
 def execute_document_chat(question: str, embedding_model: str, table_name: str):
-    try:
-        # Initialize embedding
-        vectorDB_instance.initialize_embedding(embedding_model)
+    """
+    CURRENTLY DISABLED - Uses deprecated langchain RetrievalQA
+    This feature is not integrated in the frontend yet according to README
+    """
+    raise NotImplementedError("Document chat feature is currently disabled due to dependency issues")
 
-        # Get vector store
-        vector_store = vectorDB_instance.get_vector_store(table_name)
-
-        # Initialize LLM
-        llm = llm_instance.groq("gemma2-9b-it")
-
-        # Create a prompt template
-        prompt_template = """You are Lumin, an advanced data analysis assistant, analyze the following context to answer the question. Follow these guidelines:
-
-        1. Use only the information provided in the context.
-        2. If the context doesn't contain enough information, state that clearly.
-        3. Provide data-driven insights when possible.
-        4. Be concise but comprehensive in your response.
-        5. If applicable, mention any trends, patterns, or anomalies in the data.
-
-        Context:
-        {context}
-
-        Question: {question}
-
-        Analysis:
-        """
-
-        PROMPT = PromptTemplate(
-            template=prompt_template, input_variables=["context", "question"]
-        )
-
-        # Create a RetrievalQA chain
-        qa = RetrievalQA.from_chain_type(
-            llm=llm,
-            chain_type="stuff",
-            retriever=vector_store.as_retriever(search_kwargs={"k": 2}),
-            return_source_documents=True,
-            chain_type_kwargs={"prompt": PROMPT}
-        )
-
-        # Execute the chain
-        result = qa({"query": question})
-
-        # Serialize the source documents
-        serialized_docs = [serialize_document(
-            doc) for doc in result.get('source_documents', [])]
-
-        return JSONResponse(status_code=200, content={
-            "answer": result['result'],
-            "source_documents": serialized_docs
-        })
-
-    except Exception as e:
-        print(f"Error in simple_document_chat: {str(e)}")
-        raise ValueError(f"Failed to execute document chat: {str(e)}")
+# ORIGINAL COMMENTED OUT CODE BELOW:
+#     try:
+#         # Initialize embedding
+#         vectorDB_instance.initialize_embedding(embedding_model)
+#
+#         # Get vector store
+#         vector_store = vectorDB_instance.get_vector_store(table_name)
+#
+#         # Initialize LLM
+#         llm = llm_instance.openai("gpt-4o-mini")
+#
+#         # Create a prompt template
+#         prompt_template = """You are Lumin, an advanced data analysis assistant, analyze the following context to answer the question. Follow these guidelines:
+#
+#         1. Use only the information provided in the context.
+#         2. If the context doesn't contain enough information, state that clearly.
+#         3. Provide data-driven insights when possible.
+#         4. Be concise but comprehensive in your response.
+#         5. If applicable, mention any trends, patterns, or anomalies in the data.
+#
+#         Context:
+#         {context}
+#
+#         Question: {question}
+#
+#         Analysis:
+#         """
+#
+#         PROMPT = PromptTemplate(
+#             template=prompt_template, input_variables=["context", "question"]
+#         )
+#
+#         # Create a RetrievalQA chain
+#         qa = RetrievalQA.from_chain_type(
+#             llm=llm,
+#             chain_type="stuff",
+#             retriever=vector_store.as_retriever(search_kwargs={"k": 2}),
+#             return_source_documents=True,
+#             chain_type_kwargs={"prompt": PROMPT}
+#         )
+#
+#         # Execute the chain
+#         result = qa({"query": question})
+#
+#         # Serialize the source documents
+#         serialized_docs = [serialize_document(
+#             doc) for doc in result.get('source_documents', [])]
+#
+#         return JSONResponse(status_code=200, content={
+#             "answer": result['result'],
+#             "source_documents": serialized_docs
+#         })
+#
+#     except Exception as e:
+#         print(f"Error in simple_document_chat: {str(e)}")
+#         raise ValueError(f"Failed to execute document chat: {str(e)}")
 
 
 def save_message(conversation_id: int, role: str, content: JSON, db: DB):

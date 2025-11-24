@@ -1,5 +1,5 @@
 from langchain_groq import ChatGroq
-from langchain_openai import OpenAI
+from langchain_openai import ChatOpenAI
 from langchain_ollama.llms import OllamaLLM
 from app.config.env import (GROQ_API_KEY, OPENAI_API_KEY)
 
@@ -15,7 +15,7 @@ class LLM:
         return self.llm
 
     def openai(self, model: str):
-        self.llm = OpenAI(api_key=OPENAI_API_KEY, model=model)
+        self.llm = ChatOpenAI(api_key=OPENAI_API_KEY, model=model)
         self.platform = "OpenAi"
         return self.llm
 

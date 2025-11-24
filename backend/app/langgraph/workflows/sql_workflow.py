@@ -109,7 +109,8 @@ class WorkflowManager:
 
     def create_workflow(self) -> StateGraph:
         """Create and configure the workflow graph."""
-        workflow = StateGraph(input=InputState, output=OutputState)
+        # Use InputState which contains all necessary fields
+        workflow = StateGraph(InputState)
 
         # Add nodes to the graph
         workflow.add_node("parse_question", self.sql_agent.get_parse_question)

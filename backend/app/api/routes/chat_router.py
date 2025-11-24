@@ -29,3 +29,15 @@ async def get_conversactions(request: Request, db: DB = Depends(get_db)):
 @chat_router.post("/get-conversations-history/{conversation_id}")
 async def get_conversaction_history(conversation_id: int = Path(..., title="Conversation ID"), db: DB = Depends(get_db)):
     return chat_controller.get_conversaction_history(conversation_id, db)
+
+
+@chat_router.get("/models")
+async def get_available_models():
+    """Get list of all available LLM models with their metadata"""
+    return chat_controller.get_available_llm_models()
+
+
+@chat_router.get("/models/{model_name}")
+async def get_model_info(model_name: str = Path(..., title="Model name")):
+    """Get detailed information about a specific LLM model"""
+    return chat_controller.get_llm_model_info(model_name)

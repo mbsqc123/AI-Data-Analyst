@@ -35,7 +35,8 @@ def execute_workflow(question: str, conversation_id: int, table_list: List[str],
         raise ValueError("Either system_db or db_url must be provided")
 
 
-    llm = llm_instance.openai(llm_model)
+    # Use the new centralized configuration with automatic fallback
+    llm = llm_instance.get_model(llm_model, fallback=True)
     schema = db.get_schemas(table_names=table_list)
 
     workflow = WorkflowManager(llm, db)

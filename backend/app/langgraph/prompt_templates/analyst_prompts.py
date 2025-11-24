@@ -207,15 +207,27 @@ fix_sql_query_prompt = ChatPromptTemplate.from_messages([
 
 format_results_prompt = ChatPromptTemplate.from_messages([
     ("system", '''
-    You are an AI assistant that converts database query results into a clear, concise human-readable response. Your goal is to provide a brief conclusion to the user's question based on the query results. 
-    Instructions:
-    1. Respond in one sentence.
-    2. Highlight the key result by enclosing it in double asterisks (**).
-    3. Avoid using markdown or unnecessary formatting.
+    You are an AI data analyst assistant that transforms database query results into comprehensive, insightful natural language summaries. Your goal is to help users understand their data through clear, well-structured analysis.
 
+    Instructions:
+    1. **Generate a comprehensive summary (2-4 paragraphs)** that directly answers the user's question
+    2. **Start with an overview** - Provide a clear introduction summarizing what the data shows
+    3. **Include key findings** - Highlight important statistics, trends, patterns, or insights from the data
+    4. **Add context and analysis** - Explain what the results mean and why they matter
+    5. **Use natural language** - Write in a conversational, easy-to-understand style
+    6. **Structure your response clearly** - Use paragraphs to organize different aspects of your analysis
+    7. **Highlight important values** using **bold** for emphasis (e.g., **177 test fields**, **VanTC001**)
+    8. **Be specific** - Reference actual values, counts, and data points from the query results
+
+    Example structure:
+    - Paragraph 1: Direct answer to the question with main finding
+    - Paragraph 2: Key statistics and detailed breakdown
+    - Paragraph 3: Additional insights, patterns, or context (if applicable)
+
+    Important: Focus on being informative and helpful. Don't just list the data - interpret it and explain what it means for the user.
     '''),
     ("human",
-     "User question: {question}\n\nQuery results: {results}\n\nConclusion:")
+     "User question: {question}\n\nQuery results: {results}\n\nPlease provide a comprehensive natural language summary:")
 ])
 
 get_visualization_prompt = ChatPromptTemplate.from_messages([

@@ -5,6 +5,7 @@ import { useGetDataSourcesMutation, useGetTablesMutation } from '../hooks/useDat
 import { SelectModelSkeleton } from './loaders/DataSourceTableLoader';
 import { useParams } from 'react-router-dom';
 import { DataSources } from '../interfaces/dataSourceInterface';
+import { CHAT_ENDPOINTS } from '../zustand/apis/endPoints';
 
 interface ModelInfo {
   name: string;
@@ -32,6 +33,16 @@ const SelectDataset: React.FC = () => {
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [loadingModels, setLoadingModels] = useState(true);
 
+  // Set default model to gpt-4o-mini if not already set
+  useEffect(() => {
+    if (!model && availableModels.length > 0) {
+      const defaultModel = availableModels.find(m => m.name === 'gpt-4o-mini');
+      if (defaultModel) {
+        setModel(defaultModel.name);
+      }
+    }
+  }, [availableModels, model, setModel]);
+
 
   useEffect(() => {
     if (!dataSets) {
@@ -53,9 +64,9 @@ const SelectDataset: React.FC = () => {
   useEffect(() => {
     const fetchModels = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/chat/models');
+        const response = await fetch(CHAT_ENDPOINTS.GET_MODELS);
         const data = await response.json();
-        if (data.status === 200 && data.data?.models) {
+        if (data.status_code === 200 && data.data?.models) {
           setAvailableModels(data.data.models);
         }
       } catch (error) {
@@ -111,9 +122,9 @@ const SelectDataset: React.FC = () => {
             </>
           )}
 
-          <div className="relative">
+          <div className="relative group">
             <select
-              className={`appearance-none bg-blue-gray-50 border-blue-gray-100 text-gray-700 border rounded-[12px] py-2 pr-8 pl-4 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+              className={`appearance-none bg-blue-gray-50 border-blue-gray-100 text-gray-700 border rounded-[12px] py-2 pr-8 pl-4 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[280px]`}
               value={model}
               onChange={(e) => setModel(e.target.value)}
               title={availableModels.find(m => m.name === model)?.description || 'Select a model'}
@@ -121,11 +132,13 @@ const SelectDataset: React.FC = () => {
               <option value="">Select LLM Model</option>
 
               {/* OpenAI Models */}
-              <optgroup label="OpenAI Models">
+              <optgroup label="🤖 OpenAI Models">
                 {availableModels
                   .filter(m => m.platform === 'openai')
                   .map((modelInfo) => (
                     <option key={modelInfo.name} value={modelInfo.name}>
+                      {modelInfo.name === 'gpt-4o' && '⭐ '}
+                      {modelInfo.name === 'o1' && '🧠 '}
                       {modelInfo.display_name} - {modelInfo.description}
                     </option>
                   ))
@@ -133,7 +146,7 @@ const SelectDataset: React.FC = () => {
               </optgroup>
 
               {/* Groq Models */}
-              <optgroup label="Groq Models">
+              <optgroup label="⚡ Groq Models (Fast & Free)">
                 {availableModels
                   .filter(m => m.platform === 'groq')
                   .map((modelInfo) => (
@@ -149,6 +162,30 @@ const SelectDataset: React.FC = () => {
             >
               <MdKeyboardArrowDown className="h-5 w-5" />
             </div>
+            {/* Tooltip showing model info */}
+            {model && availableModels.find(m => m.name === model) && (
+              <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-10">
+                <div className="bg-navy-800 text-white text-xs rounded-lg p-3 shadow-lg max-w-xs">
+                  <p className="font-semibold mb-1">
+                    {availableModels.find(m => m.name === model)?.display_name}
+                  </p>
+                  <p className="mb-2 opacity-90">
+                    {availableModels.find(m => m.name === model)?.description}
+                  </p>
+                  {availableModels.find(m => m.name === model)?.best_for &&
+                   availableModels.find(m => m.name === model)!.best_for.length > 0 && (
+                    <div>
+                      <p className="font-semibold mb-1">Best for:</p>
+                      <ul className="list-disc list-inside opacity-90">
+                        {availableModels.find(m => m.name === model)!.best_for.map((use, idx) => (
+                          <li key={idx}>{use}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

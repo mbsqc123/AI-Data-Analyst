@@ -20,7 +20,7 @@ class AskQuestion(BaseModel):
                 "selected_tables": ["sales", "products"],
                 "dataset_id": "123",
                 "conversaction_id": "123",
-                "llm_model":"gemma2-9b-it"
+                "llm_model":"gpt-4o-mini"
             }
         }
 

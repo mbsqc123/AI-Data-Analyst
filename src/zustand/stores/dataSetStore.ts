@@ -18,7 +18,7 @@ export interface DataSetStore {
 const dataSetStore = create<DataSetStore>((set) => ({
   dataSets: null,
   tables:[],
-  selectedModel:"gemma2-9b-it",
+  selectedModel:"gpt-4o-mini",  // Updated to use OpenAI's fast and cost-effective model
 
   setTables: (tables: string[]) => set({ tables }),
   setModel: (model:string) => set({ selectedModel:model }),

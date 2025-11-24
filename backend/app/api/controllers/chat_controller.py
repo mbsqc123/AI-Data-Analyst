@@ -12,6 +12,7 @@ from app.api.db.data_sources import DataSources
 from app.api.db.chat_history import (Conversations, Messages)
 from datetime import datetime
 from app.utils.response_utils import create_response
+from app.config.llm_config import get_available_models, get_model_info, validate_model
 import json
 
 # Set up logging
@@ -313,6 +314,78 @@ def get_conversaction_history(conversaction_id: int, db: DB):
             content=create_response(
                 status_code=500,
                 message="An unexpected error occurred",
+                data={"error": str(e)}
+            )
+        )
+
+
+def get_available_llm_models():
+    """
+    Get a list of all available LLM models with their metadata.
+
+    Returns:
+        JSONResponse with list of models and their details
+    """
+    try:
+        models = get_available_models()
+        return JSONResponse(
+            status_code=200,
+            content=create_response(
+                status_code=200,
+                message="Available models fetched successfully",
+                data={"models": models}
+            )
+        )
+    except Exception as e:
+        logger.error(f"Error fetching available models: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content=create_response(
+                status_code=500,
+                message="Failed to fetch available models",
+                data={"error": str(e)}
+            )
+        )
+
+
+def get_llm_model_info(model_name: str):
+    """
+    Get detailed information about a specific LLM model.
+
+    Args:
+        model_name: Name of the model to get info for
+
+    Returns:
+        JSONResponse with model details or error
+    """
+    try:
+        model_info = get_model_info(model_name)
+
+        if model_info is None:
+            return JSONResponse(
+                status_code=404,
+                content=create_response(
+                    status_code=404,
+                    message=f"Model '{model_name}' not found",
+                    data={}
+                )
+            )
+
+        return JSONResponse(
+            status_code=200,
+            content=create_response(
+                status_code=200,
+                message="Model info fetched successfully",
+                data={"model": model_info}
+            )
+        )
+    except Exception as e:
+        logger.error(f"Error fetching model info: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content=create_response(
+                status_code=500,
+                message="Failed to fetch model info",
                 data={"error": str(e)}
             )
         )

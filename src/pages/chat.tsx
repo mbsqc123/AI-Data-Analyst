@@ -4,6 +4,7 @@ import { BsStars } from 'react-icons/bs';
 import Steps from '../components/steps/Steps';
 import SelectDataset from '../components/SelectDataset';
 import ModelSelector from '../components/ModelSelector';
+import FileMessage from '../components/FileMessage';
 import Avatar from 'react-avatar';
 import { useParams } from 'react-router-dom';
 import { useStreamChat } from '../hooks/useChat';
@@ -75,10 +76,31 @@ export default function Chat() {
   useEffect(() => {
     const filteredDataSet = dataSets?.filter((dataSet) => dataSet.id === Number(data_source_id))
     if(filteredDataSet?.length > 0){
-      setTables([filteredDataSet[0]?.table_name || '']) 
-      setDatasetType(filteredDataSet[0]?.type) 
+      setTables([filteredDataSet[0]?.table_name || ''])
+      setDatasetType(filteredDataSet[0]?.type)
     }
   }, [data_source_id])
+
+  // Show file upload message when conversation starts with a data source
+  useEffect(() => {
+    if (data_source_id && dataSets && messages.length === 0) {
+      const dataSet = dataSets.find(ds => ds.id === Number(data_source_id));
+
+      if (dataSet && dataSet.type === 'spreadsheet') {
+        // Add file upload message to show the file was uploaded
+        setMessages([{
+          file_upload: {
+            fileName: dataSet.name || 'Unknown file',
+            fileSize: 0,
+            rowsProcessed: undefined,
+            timestamp: new Date(),
+            dataSourceId: Number(data_source_id),
+            tableName: dataSet.table_name
+          }
+        }]);
+      }
+    }
+  }, [data_source_id, dataSets, messages.length])
   
 
   const askQuestion = () => {
@@ -132,6 +154,16 @@ export default function Chat() {
             {messages?.length > 0 ? (
               messages.map((message, index) => (
                 <div key={index}>
+                  {/* File upload message */}
+                  {message?.file_upload && (
+                    <FileMessage
+                      fileName={message.file_upload.fileName}
+                      fileSize={message.file_upload.fileSize}
+                      rowsProcessed={message.file_upload.rowsProcessed}
+                      timestamp={message.file_upload.timestamp}
+                    />
+                  )}
+
                   {/* User question */}
                   {message?.user_question && (
                     <div className="mb-6 flex items-start">

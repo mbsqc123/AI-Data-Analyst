@@ -53,9 +53,20 @@ export interface AiAnswer{
   formatted_data_for_visualization?: object[],
   recommended_visualization?: string
 }
+
+export interface FileUploadMessage {
+  fileName: string;
+  fileSize?: number;
+  rowsProcessed?: number;
+  timestamp: Date;
+  dataSourceId: number;
+  tableName?: string;
+}
+
 export interface ConversationMessages{
   user_question?: string,
   ai_answer?: AiAnswer,
+  file_upload?: FileUploadMessage,
 }
 
 export interface Conversations {

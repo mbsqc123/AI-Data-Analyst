@@ -66,20 +66,20 @@ AVAILABLE_MODELS: Dict[str, ModelConfig] = {
     "o1": ModelConfig(
         name="o1",
         platform=ModelPlatform.OPENAI,
-        display_name="OpenAI o1",
-        description="Most advanced reasoning model for complex problem-solving",
+        display_name="GPT-5.1 (o1)",
+        description="OpenAI's most advanced reasoning model (GPT-5.1 series) for complex problem-solving",
         capability=ModelCapability.REASONING,
         temperature=1.0,  # o1 models require temperature=1
-        best_for=["Complex SQL queries", "Advanced data analysis", "Multi-step reasoning"]
+        best_for=["Complex SQL queries", "Advanced data analysis", "Multi-step reasoning", "Expert-level tasks"]
     ),
     "o1-mini": ModelConfig(
         name="o1-mini",
         platform=ModelPlatform.OPENAI,
-        display_name="OpenAI o1-mini",
-        description="Fast reasoning model optimized for STEM tasks",
+        display_name="GPT-5.1 Mini (o1-mini)",
+        description="Fast reasoning model from GPT-5.1 series, optimized for STEM tasks",
         capability=ModelCapability.REASONING,
         temperature=1.0,  # o1 models require temperature=1
-        best_for=["SQL query generation", "Data validation", "Quick analysis"]
+        best_for=["SQL query generation", "Data validation", "Quick analysis", "Fast reasoning"]
     ),
     "gpt-4o": ModelConfig(
         name="gpt-4o",

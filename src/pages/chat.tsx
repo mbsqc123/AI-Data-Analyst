@@ -7,7 +7,8 @@ import Avatar from 'react-avatar';
 import { useParams } from 'react-router-dom';
 import { useStreamChat } from '../hooks/useChat';
 import { ConversationMessages, ProcessingMessage } from '../interfaces/chatInterface';
-import TypewriterWithHighlight from '../components/TypewriterWithHighlight';
+import MarkdownRenderer from '../components/MarkdownRenderer';
+import FileMessage from '../components/FileMessage';
 import ChartComponent from '../components/ChartComponent';
 // import { toast } from 'react-toastify';
 import dataSetStore from '../zustand/stores/dataSetStore';
@@ -72,13 +73,32 @@ export default function Chat() {
   });
 
   useEffect(() => {
-    const filteredDataSet = dataSets?.filter((dataSet) => dataSet.id === Number(data_source_id))
-    if(filteredDataSet?.length > 0){
-      setTables([filteredDataSet[0]?.table_name || '']) 
-      setDatasetType(filteredDataSet[0]?.type) 
+    if (data_source_id && dataSets) {
+      const filteredDataSet = dataSets.filter((dataSet) => dataSet.id === Number(data_source_id))
+      if(filteredDataSet.length > 0 && filteredDataSet[0]){
+        const dataSet = filteredDataSet[0];
+        setTables([dataSet.table_name || ''])
+        setDatasetType(dataSet.type)
+
+        // Add file upload message if this is a new conversation (no messages yet) and we have a spreadsheet data source
+        if (messages.length === 0 && dataSet.type === 'spreadsheet') {
+          setMessages([{
+            file_upload: {
+              fileName: dataSet.name || 'Unknown file',
+              fileSize: 0, // We don't have this info from the dataset
+              timestamp: new Date(),
+              dataSourceId: Number(data_source_id),
+              tableName: dataSet.table_name
+            }
+          }]);
+        }
+      }
+    } else {
+      // Direct chat mode without data source
+      setDatasetType('direct_chat')
     }
-  }, [data_source_id])
-  
+  }, [data_source_id, dataSets])
+
 
   const askQuestion = () => {
     // Safely spread messages, handling empty array case
@@ -86,14 +106,26 @@ export default function Chat() {
     setProcessingMessages([]);
     // Clear the question input after sending
     setQuestion('');
-    sendMessage({
+
+    // Build request body based on whether we have a data source
+    const requestBody: any = {
       question: question,
-      type: datasetType || 'url',
-      conversaction_id: Number(conversation_id),
-      dataset_id: Number(data_source_id),
-      selected_tables:tables,
-      llm_model:selectedModel
-    })
+      type: datasetType || 'direct_chat',
+      llm_model: selectedModel
+    };
+
+    // Only add data source specific fields if we have a data source
+    if (data_source_id) {
+      requestBody.dataset_id = Number(data_source_id);
+      requestBody.selected_tables = tables;
+    }
+
+    // Only add conversation_id if it exists
+    if (conversation_id) {
+      requestBody.conversaction_id = Number(conversation_id);
+    }
+
+    sendMessage(requestBody);
   };
 
   console.log(selectedModel);
@@ -107,9 +139,45 @@ export default function Chat() {
         <div className={`flex flex-col h-full ${messages?.length > 0 ? 'w-1/2' : 'w-full'}`}>
           {/* Scrollable messages container */}
           <div className="flex-1 overflow-y-auto p-8 space-y-6">
+            {/* Data Source Context Indicator */}
+            {messages?.length > 0 && (
+              <div className="mb-4">
+                {data_source_id ? (
+                  <div className="bg-blue-50 px-4 py-2 rounded-lg flex items-center justify-between border border-blue-200">
+                    <span className="text-sm text-blue-700 flex items-center">
+                      📊 Data Analysis Mode
+                      {dataSets?.find(ds => ds.id === Number(data_source_id))?.name && (
+                        <span className="ml-2 font-semibold">
+                          - {dataSets.find(ds => ds.id === Number(data_source_id))?.name}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="bg-purple-50 px-4 py-2 rounded-lg flex items-center border border-purple-200">
+                    <span className="text-sm text-purple-700">
+                      💬 Direct Chat Mode
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {messages?.length > 0 ? (
               messages.map((message, index) => (
                 <div key={index}>
+                  {/* File Upload Message */}
+                  {message?.file_upload && (
+                    <FileMessage
+                      fileName={message.file_upload.fileName}
+                      fileSize={message.file_upload.fileSize}
+                      rowsProcessed={message.file_upload.rowsProcessed}
+                      timestamp={message.file_upload.timestamp}
+                      dataSourceId={message.file_upload.dataSourceId?.toString()}
+                      tableName={message.file_upload.tableName}
+                    />
+                  )}
+
                   {/* User question */}
                   {message?.user_question && (
                     <div className="mb-6 flex items-start">
@@ -129,7 +197,7 @@ export default function Chat() {
                       <div className="flex items-start mb-4">
                         <BsStars className="text-3xl text-navy-600 mr-2 flex-shrink-0" />
                         <div className="flex-1">
-                          <TypewriterWithHighlight text={message.ai_answer.answer || ""} />
+                          <MarkdownRenderer content={message.ai_answer.answer || ""} />
                         </div>
                       </div>
 

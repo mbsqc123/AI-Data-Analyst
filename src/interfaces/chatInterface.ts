@@ -1,10 +1,10 @@
 
 export interface ChatRequestBody {
   question: string;
-  type: "url" | "spreadsheet" | string;
-  conversaction_id: number;
-  dataset_id: number;
-  selected_tables: string[];
+  type: "url" | "spreadsheet" | "direct_chat" | string;
+  conversaction_id?: number;
+  dataset_id?: number;
+  selected_tables?: string[];
   llm_model:string
 }
 
@@ -51,11 +51,26 @@ export interface ProcessingMessage {
 export interface AiAnswer{
   answer?: string,
   formatted_data_for_visualization?: object[],
-  recommended_visualization?: string
+  recommended_visualization?: string,
+  sql_query?: string,
+  sql_valid?: boolean,
+  parsed_question?: { is_relevant: boolean; relevant_tables: TableInfo[] },
+  model_used?: string
 }
+
+export interface FileUploadMessage {
+  fileName: string;
+  fileSize: number;
+  rowsProcessed?: number;
+  timestamp: Date;
+  dataSourceId?: number;
+  tableName?: string;
+}
+
 export interface ConversationMessages{
   user_question?: string,
   ai_answer?: AiAnswer,
+  file_upload?: FileUploadMessage,
 }
 
 export interface Conversations {

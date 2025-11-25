@@ -33,11 +33,18 @@ const SelectDataset: React.FC = () => {
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [loadingModels, setLoadingModels] = useState(true);
 
+  // Log when availableModels changes
+  useEffect(() => {
+    console.log('Available models updated:', availableModels);
+    console.log('Number of models:', availableModels.length);
+  }, [availableModels]);
+
   // Set default model to gpt-4o-mini if not already set
   useEffect(() => {
     if (!model && availableModels.length > 0) {
       const defaultModel = availableModels.find(m => m.name === 'gpt-4o-mini');
       if (defaultModel) {
+        console.log('Setting default model to:', defaultModel.name);
         setModel(defaultModel.name);
       }
     }
@@ -64,9 +71,13 @@ const SelectDataset: React.FC = () => {
   useEffect(() => {
     const fetchModels = async () => {
       try {
+        console.log('Fetching models from:', CHAT_ENDPOINTS.GET_MODELS);
         const response = await fetch(CHAT_ENDPOINTS.GET_MODELS);
+        console.log('Models API response status:', response.status);
         const data = await response.json();
+        console.log('Models API response data:', data);
         if (data.status_code === 200 && data.data?.models) {
+          console.log('Available models loaded:', data.data.models);
           setAvailableModels(data.data.models);
         }
       } catch (error) {
@@ -126,7 +137,13 @@ const SelectDataset: React.FC = () => {
             <select
               className={`appearance-none bg-blue-gray-50 border-blue-gray-100 text-gray-700 border rounded-[12px] py-2 pr-8 pl-4 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[280px]`}
               value={model}
-              onChange={(e) => setModel(e.target.value)}
+              onChange={(e) => {
+                console.log('Dropdown changed to:', e.target.value);
+                console.log('setModel function:', typeof setModel);
+                console.log('Current model value:', model);
+                setModel(e.target.value);
+                console.log('Model updated via setModel');
+              }}
               title={availableModels.find(m => m.name === model)?.description || 'Select a model'}
             >
               <option value="">Select LLM Model</option>

@@ -13,8 +13,14 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/docs",
             "/openapi.json",
             "/api/user/v1/login",
-            "/api/user/v1/signup"
+            "/api/user/v1/signup",
+            "/api/chat/v1/models"
         ]:
+            response = await call_next(request)
+            return response
+
+        # Also allow access to model-specific endpoints like /api/chat/v1/models/{model_name}
+        if request.url.path.startswith("/api/chat/v1/models/"):
             response = await call_next(request)
             return response
 

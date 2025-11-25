@@ -26,48 +26,49 @@ def should_use_data_analysis(question: str, has_uploaded_data: bool) -> bool:
         has_uploaded_data: Whether user has uploaded any data
 
     Returns:
-        True if data analysis is needed, False for direct chat
+        True if data analysis is needed (SQL query), False for direct chat
     """
-    # Keywords that indicate data analysis needed
-    data_keywords = [
-        'show me', 'query', 'select', 'count', 'sum', 'average', 'mean',
-        'how many', 'list all', 'find records', 'search for', 'filter',
-        'analyze', 'statistics', 'chart', 'graph', 'visualization', 'plot',
-        'total', 'aggregate', 'group by', 'order by', 'sort',
-        'maximum', 'minimum', 'median', 'calculate', 'compute',
-        'top', 'bottom', 'highest', 'lowest', 'compare',
-        'trend', 'pattern', 'correlation', 'distribution'
-    ]
-
     # If no uploaded data, always use direct chat
     if not has_uploaded_data:
         logger.info("No uploaded data - using direct chat mode")
         return False
 
-    # Check if question explicitly asks about the data
     question_lower = question.lower()
 
-    # If question contains data analysis keywords, use SQL workflow
-    if any(keyword in question_lower for keyword in data_keywords):
-        logger.info(f"Data analysis keywords detected - using SQL workflow")
-        return True
-
-    # If question is about general topics or asks for explanations, use direct chat
-    general_indicators = [
-        'what is', 'explain', 'how to', 'why', 'define',
-        'difference between', 'compare', 'tell me about',
-        'describe', 'summarize', 'example of'
+    # Keywords that explicitly request natural language explanation/summary
+    # These should NEVER trigger SQL analysis
+    explanation_keywords = [
+        'explain', 'describe', 'what is', 'tell me about',
+        'summarize', 'summary', 'overview', 'understand',
+        'clarify', 'elaborate', 'provide details', 'logic',
+        'how does', 'what does', 'meaning of'
     ]
 
-    if any(indicator in question_lower for indicator in general_indicators):
-        # Check if it's asking about the data specifically
-        data_references = ['data', 'dataset', 'table', 'column', 'row', 'record']
-        if not any(ref in question_lower for ref in data_references):
-            logger.info("General question detected - using direct chat mode")
-            return False
+    # If asking for explanation/summary, use direct chat (with data context if needed)
+    if any(keyword in question_lower for keyword in explanation_keywords):
+        logger.info(f"Explanation/summary request detected - using direct chat mode")
+        return False
 
-    # Default: if user has uploaded data but question is ambiguous, use direct chat
-    # User can always be more specific if they want data analysis
+    # Keywords that REQUIRE SQL/database query
+    sql_required_keywords = [
+        'how many', 'count', 'sum', 'average', 'mean',
+        'show all', 'list all', 'find records where', 'search for',
+        'maximum', 'minimum', 'median', 'total',
+        'group by', 'order by', 'sort by',
+        'top ', 'bottom ', 'highest', 'lowest',
+        'greater than', 'less than', 'between',
+        'statistics', 'distribution', 'frequency',
+        'chart', 'graph', 'visualization', 'plot',
+        'filter by', 'where ', 'calculate'
+    ]
+
+    # Check if query explicitly needs data calculation/filtering
+    if any(keyword in question_lower for keyword in sql_required_keywords):
+        logger.info(f"SQL query keywords detected - using SQL workflow")
+        return True
+
+    # Default: For ambiguous queries with uploaded data, use direct chat
+    # This gives more natural responses and users can be more specific if they need SQL
     logger.info("Ambiguous query with uploaded data - using direct chat mode")
     return False
 
@@ -139,15 +140,17 @@ def execute_workflow(question: str, conversation_id: int, table_list: List[str],
     return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
-def execute_direct_chat(question: str, conversation_id: int, llm_model: Optional[str] = "gpt-4o-mini", system_db: Optional[DB] = None):
+def execute_direct_chat(question: str, conversation_id: int, llm_model: Optional[str] = "gpt-4o-mini", system_db: Optional[DB] = None, data_source_info: Optional[dict] = None):
     """
-    Execute direct ChatGPT-style response without database analysis.
+    Execute direct ChatGPT-style response without SQL queries.
+    Can include data context for summaries and explanations.
 
     Args:
         question: The user's question
         conversation_id: ID of the conversation for history tracking
         llm_model: Model name to use (default: gpt-4o-mini)
         system_db: Database instance for saving messages
+        data_source_info: Optional dict with data source context (table_name, sample_data, etc.)
 
     Returns:
         StreamingResponse with ChatGPT response
@@ -214,10 +217,31 @@ def execute_direct_chat(question: str, conversation_id: int, llm_model: Optional
                 logger.warning(f"Could not fetch conversation history: {str(e)}")
 
         # Build messages for the LLM
+        # If data source info is provided, create a data-aware system prompt
+        if data_source_info:
+            system_content = f"""You are an expert data analyst assistant. The user has uploaded a dataset and wants to understand it.
+
+Dataset Information:
+- File/Source: {data_source_info.get('name', 'Unknown')}
+- Table: {data_source_info.get('table_name', 'N/A')}
+
+{data_source_info.get('data_preview', '')}
+
+Provide clear, comprehensive explanations about the data. Use markdown formatting for better readability:
+- Use **bold** for emphasis
+- Use bullet points for lists
+- Use headers (##) for sections
+- Be conversational and helpful
+
+Focus on explaining WHAT the data represents and WHY it matters, not just technical details.
+Do NOT write SQL queries unless specifically asked. Provide natural language explanations."""
+        else:
+            system_content = "You are a helpful AI assistant. Provide clear, comprehensive, and well-structured responses using markdown formatting. Be concise but thorough."
+
         messages = [
             {
                 "role": "system",
-                "content": "You are a helpful AI assistant. Provide clear, comprehensive, and well-structured responses. Be concise but thorough."
+                "content": system_content
             }
         ]
 

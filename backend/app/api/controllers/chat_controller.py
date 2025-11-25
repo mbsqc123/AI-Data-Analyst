@@ -49,11 +49,46 @@ async def ask_question(id: int, body: AskQuestion, db: DB):
         # If query doesn't need data analysis, use direct chat
         if not use_data_analysis:
             logger.info("Routing to direct chat mode")
+
+            # Prepare data source info for context if available
+            data_source_info = None
+            if data_source:
+                # Get sample data for context
+                try:
+                    with db.session() as session:
+                        # Get column names and sample rows
+                        table_name = data_source.table_name
+                        sample_query = text(f"SELECT * FROM {table_name} LIMIT 20")
+                        result = session.execute(sample_query)
+                        columns = result.keys()
+                        sample_rows = result.fetchall()
+
+                        # Format sample data for LLM
+                        data_preview = f"**Columns:** {', '.join(columns)}\n\n"
+                        data_preview += f"**Sample Data (first {len(sample_rows)} rows):**\n"
+                        data_preview += "```\n"
+                        # Add column headers
+                        data_preview += " | ".join(columns) + "\n"
+                        data_preview += "-" * (len(" | ".join(columns))) + "\n"
+                        # Add sample rows
+                        for row in sample_rows[:10]:  # Limit to 10 rows in preview
+                            data_preview += " | ".join(str(val) if val is not None else "NULL" for val in row) + "\n"
+                        data_preview += "```\n"
+
+                        data_source_info = {
+                            "name": data_source.name,
+                            "table_name": table_name,
+                            "data_preview": data_preview
+                        }
+                except Exception as e:
+                    logger.warning(f"Could not fetch sample data: {str(e)}")
+
             return execute_direct_chat(
                 question=body.question,
                 conversation_id=body.conversaction_id,
                 llm_model=body.llm_model,
-                system_db=db
+                system_db=db,
+                data_source_info=data_source_info
             )
 
         # Otherwise, use appropriate workflow based on type

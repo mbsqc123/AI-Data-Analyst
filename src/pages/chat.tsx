@@ -3,6 +3,7 @@ import { BiSend } from 'react-icons/bi';
 import { BsStars } from 'react-icons/bs';
 import Steps from '../components/steps/Steps';
 import SelectDataset from '../components/SelectDataset';
+import ModelSelector from '../components/ModelSelector';
 import Avatar from 'react-avatar';
 import { useParams } from 'react-router-dom';
 import { useStreamChat } from '../hooks/useChat';
@@ -105,6 +106,27 @@ export default function Chat() {
         {/* answer div */}
         {/* <div className={`mt-auto flex flex-col p-8 ${messages?.length > 0 ? 'w-1/2' : 'w-full'}`}> */}
         <div className={`flex flex-col h-full ${messages?.length > 0 ? 'w-1/2' : 'w-full'}`}>
+          {/* Chat Header - Always visible */}
+          {messages?.length > 0 && (
+            <div className="flex items-center justify-between px-8 py-4 border-b border-blue-gray-100 bg-blue-gray-50/30">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-navy-700">AI Model:</span>
+                  <ModelSelector compact={true} />
+                </div>
+                {data_source_id && (
+                  <>
+                    <span className="text-gray-300">|</span>
+                    <div className="flex items-center gap-2 text-sm text-navy-600">
+                      <span>📊</span>
+                      <span>Data Source Active</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Scrollable messages container */}
           <div className="flex-1 overflow-y-auto p-8 space-y-6">
             {messages?.length > 0 ? (

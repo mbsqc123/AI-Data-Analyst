@@ -126,7 +126,12 @@ const SelectDataset: React.FC = () => {
             <select
               className={`appearance-none bg-blue-gray-50 border-blue-gray-100 text-gray-700 border rounded-[12px] py-2 pr-8 pl-4 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[280px]`}
               value={model}
-              onChange={(e) => setModel(e.target.value)}
+              onChange={(e) => {
+                console.log('Model dropdown changed to:', e.target.value);
+                console.log('Available models:', availableModels);
+                setModel(e.target.value);
+                console.log('Model updated in store');
+              }}
               title={availableModels.find(m => m.name === model)?.description || 'Select a model'}
             >
               <option value="">Select LLM Model</option>
@@ -162,9 +167,9 @@ const SelectDataset: React.FC = () => {
             >
               <MdKeyboardArrowDown className="h-5 w-5" />
             </div>
-            {/* Tooltip showing model info */}
+            {/* Tooltip showing model info - FIXED: Added pointer-events-none to prevent blocking */}
             {model && availableModels.find(m => m.name === model) && (
-              <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-10">
+              <div className="absolute left-0 top-full mt-2 hidden group-hover:block z-10 pointer-events-none">
                 <div className="bg-navy-800 text-white text-xs rounded-lg p-3 shadow-lg max-w-xs">
                   <p className="font-semibold mb-1">
                     {availableModels.find(m => m.name === model)?.display_name}

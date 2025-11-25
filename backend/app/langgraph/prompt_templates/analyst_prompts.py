@@ -6,9 +6,12 @@ get_schema_insights_prompt = ChatPromptTemplate.from_messages([
 
             Instructions:
             1. Analyze the user question and database schema to identify relevant tables and columns.
-            2. Set "is_relevant" to false if the question is not applicable to the database or lacks sufficient information for an answer.
-            3. Focus on columns with meaningful nouns (e.g., names, entities) and exclude non-noun columns (e.g., IDs, numerical data) unless specifically relevant to the question.
-            4. Return the response in the following JSON format, Please return the result in a valid JSON format. Do not use backticks, code blocks, or any extra characters:
+            2. **Default to "is_relevant": true** unless the question is clearly off-topic (e.g., "what's the weather", "tell me a joke", or unrelated non-data questions).
+            3. **Use fuzzy matching for table names**: If the user mentions any text that partially matches a table name (case-insensitive), set "is_relevant" to true. For example, "VanTC001" should match table "vantc001_a0634235".
+            4. **Be permissive with generic data questions**: Questions like "summarize", "show me data", "what is in the table", "analyze this data" should always be marked as relevant.
+            5. **When user just uploaded data**: Assume any question about data is relevant to the recently uploaded dataset.
+            6. Focus on columns with meaningful nouns (e.g., names, entities) and exclude non-noun columns (e.g., IDs, numerical data) unless specifically relevant to the question.
+            7. Return the response in the following JSON format, Please return the result in a valid JSON format. Do not use backticks, code blocks, or any extra characters:
             {{
             "is_relevant": boolean,
             "relevant_tables": [
@@ -21,6 +24,7 @@ get_schema_insights_prompt = ChatPromptTemplate.from_messages([
             }}
 
             Key Guidelines:
+            - **Prioritize helpfulness**: When in doubt, mark the question as relevant and attempt to identify tables/columns.
             - Always verify column names against the provided schema.
             - Include only existing schema column names in the "columns" and "noun_columns" lists.
             - "noun_columns" shouldn't include any numeric value verify the type from schema, type must be not Int, Bigint or any type of integer value .

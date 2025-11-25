@@ -11,6 +11,7 @@ export const CHAT_ENDPOINTS = {
   INITIATE_CONVERSATION: `${API_BASE_URL}/chat/v1/initiate-conversations`,
   GET_CONVERSATIONS: `${API_BASE_URL}/chat/v1/get-conversations`,
   GET_CONVERSATION_HISTORY:(conversation_id:number)=> `${API_BASE_URL}/chat/v1/get-conversations-history/${conversation_id}`,
+  GET_MODELS: `${API_BASE_URL}/chat/v1/models`,
 };
 
 export const DATA_SOURCE_ENDPOINTS = {

@@ -4,7 +4,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy import select, func, and_, text
 from sqlalchemy.orm import aliased
 from app.utils.chat_utils import (
-    execute_workflow, execute_document_chat, save_message)
+    execute_workflow, execute_document_chat, save_message,
+    should_use_data_analysis, execute_direct_chat)
 from app.api.validators.chat_validator import AskQuestion, InitiateCinversaction
 from app.config.db_config import DB
 from app.config.logging_config import get_logger
@@ -39,7 +40,25 @@ async def ask_question(id: int, body: AskQuestion, db: DB):
             db=db
         )
 
+        # Determine if we should use data analysis or direct chat
+        has_uploaded_data = data_source is not None
+        use_data_analysis = should_use_data_analysis(body.question, has_uploaded_data)
+
+        logger.info(f"Query mode - Data Analysis: {use_data_analysis}, Type: {body.type}")
+
+        # If query doesn't need data analysis, use direct chat
+        if not use_data_analysis:
+            logger.info("Routing to direct chat mode")
+            return execute_direct_chat(
+                question=body.question,
+                conversation_id=body.conversaction_id,
+                llm_model=body.llm_model,
+                system_db=db
+            )
+
+        # Otherwise, use appropriate workflow based on type
         if body.type == "url":
+            logger.info("Routing to SQL workflow (URL)")
             return execute_workflow(
                 question=body.question,
                 conversation_id=body.conversaction_id,
@@ -49,6 +68,7 @@ async def ask_question(id: int, body: AskQuestion, db: DB):
                 llm_model=body.llm_model
             )
         elif body.type == "spreadsheet":
+            logger.info("Routing to SQL workflow (Spreadsheet)")
             return execute_workflow(
                 question=body.question,
                 conversation_id=body.conversaction_id,
@@ -57,6 +77,7 @@ async def ask_question(id: int, body: AskQuestion, db: DB):
                 llm_model=body.llm_model
             )
         else:
+            logger.info("Routing to document chat")
             print("execure_document_chat")
             return execute_document_chat(
                 body.question, "text-embedding-3-large", "speech_81a36223")
